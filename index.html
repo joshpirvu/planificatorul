@@ -609,7 +609,7 @@
                 const btn = document.getElementById(`timer-btn-${taskId}`);
                 if (secondsLeft <= 0) { stopTimer(); triggerNotification(taskName); renderTasks(); } 
                 else { if (btn) btn.innerHTML = `⏳ ${formatTime(secondsLeft)}`; 
-                     document.title = '${taskName} - ${formatTime(secondsLeft)}';
+                     document.title = `${taskName} - ${formatTime(secondsLeft)}`;
                      }
             }, 1000);
             renderTasks();
