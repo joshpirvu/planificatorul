@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planificator Avansat</title>
+    <title>Day Flow</title>
+    <link rel-"icon" href 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
@@ -144,7 +145,7 @@
 <body>
 
     <header>
-        <h1>planificator</h1>
+        <h1>Day Flow</h1>
         <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
     </header>
 
@@ -607,12 +608,16 @@
                 const secondsLeft = Math.round(msLeft / 1000);
                 const btn = document.getElementById(`timer-btn-${taskId}`);
                 if (secondsLeft <= 0) { stopTimer(); triggerNotification(taskName); renderTasks(); } 
-                else { if (btn) btn.innerHTML = `⏳ ${formatTime(secondsLeft)}`; }
+                else { if (btn) btn.innerHTML = `⏳ ${formatTime(secondsLeft)}`; 
+                     document.title = '${taskName} - ${formatTime(secondsLeft)}';
+                     }
             }, 1000);
             renderTasks();
         }
 
-        function stopTimer() { if (activeTimer.intervalId) clearInterval(activeTimer.intervalId); activeTimer = { taskId: null, intervalId: null, endTime: 0 }; }
+        function stopTimer() { if (activeTimer.intervalId) clearInterval(activeTimer.intervalId); activeTimer = { taskId: null, intervalId: null, endTime: 0 }; 
+                             document.title = "Day Flow";
+                             }
 
         document.addEventListener('keydown', function(e) {
             // Pentru submit pe Enter când editezi denumirile "inline" pe pagină
