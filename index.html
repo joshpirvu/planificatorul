@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificator Avansat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text: #1F2937;
+            --border: #D1D5DB;
+            --badge-bg: #E5E7EB;
+        }
+
+        body.dark-mode {
+            --primary: #6366F1;
+            --bg: #111827;
+            --card-bg: #1F2937;
+            --text: #F9FAFB;
+            --border: #374151;
+            --badge-bg: #374151;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s, color 0.3s; }
+        header { width: 100%; background-color: var(--primary); color: white; padding: 1rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; position: relative; }
+        h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        #theme-toggle { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; }
+        main { width: 90%; max-width: 650px; margin-top: 2rem; padding-bottom: 3rem; }
+        button { background-color: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-danger { background-color: #EF4444; }
+        .btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .btn-ghost { background-color: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background-color: var(--badge-bg); }
+        input, textarea, select { background-color: var(--card-bg); color: var(--text); border: 1px solid var(--border); padding: 0.5rem; border-radius: 6px; outline: none; transition: background-color 0.3s, color 0.3s; box-sizing: border-box; font-family: inherit; }
+        
+        /* Inline editing styles */
+        .editable-text { cursor: text; padding: 2px 4px; border-radius: 4px; border: 1px solid transparent; transition: border-color 0.2s, background-color 0.2s; display: inline-block; min-width: 50px; }
+        .editable-text:hover { border-color: var(--border); background-color: var(--badge-bg); }
+        .editable-text:focus { outline: none; border-color: var(--primary); background-color: var(--card-bg); }
+        
+        /* Scrollable & Clickable time/number styles */
+        .scrollable-value, .scrollable-time { 
+            cursor: pointer; 
+            user-select: none; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            border: 1px dashed transparent; 
+            transition: border-color 0.2s, background-color 0.2s; 
+            display: inline-block; 
+            font-weight: 600; 
+        }
+        .scrollable-time { color: var(--primary); }
+        .scrollable-value:hover, .scrollable-time:hover { border-color: var(--primary); background-color: var(--badge-bg); }
+
+        /* Mâner pentru Drag & Drop */
+        .drag-handle {
+            cursor: grab;
+            padding: 0.2rem 0.4rem;
+            margin-right: 0.5rem;
+            color: #9CA3AF;
+            background-color: var(--badge-bg);
+            border-radius: 4px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .drag-handle:hover { background-color: var(--border); color: var(--text); }
+        .drag-handle:active { cursor: grabbing; }
+
+        .card { background: var(--card-bg); padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        #view-home { display: block; }
+        .plan-card { background: var(--card-bg); padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.1s, background-color 0.3s; }
+        .plan-card:hover { transform: translateY(-2px); }
+        textarea { width: 100%; margin-bottom: 0.5rem; resize: vertical; }
+        .backlog-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        .backlog-tag { background: var(--badge-bg); padding: 0.4rem 0.8rem; border-radius: 16px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border); }
+        .backlog-tag:hover { opacity: 0.7; }
+        .remove-tag { color: #EF4444; font-weight: bold; font-size: 1.1rem; line-height: 1; }
+        #view-plan { display: none; }
+        .header-plan { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .time-settings { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+        
+        #start-time-input { display: none; }
+
+        .add-task-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        #task-name { flex: 2; min-width: 150px; }
+        #task-duration { flex: 1; min-width: 60px; max-width: 80px;}
+        
+        ul { list-style: none; padding: 0; margin: 0; }
+        li.task-item { background: var(--card-bg); margin-bottom: 0.8rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background-color 0.3s; display: flex; flex-direction: column; overflow: hidden; }
+        .task-main-row { padding: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        
+        .task-info { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; flex: 1; }
+        .badge { background: var(--badge-bg); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center;}
+        
+        .completed .editable-text { text-decoration: line-through; opacity: 0.5; }
+        .btn-timer { background-color: #10B981; min-width: 80px; text-align: center; }
+        .btn-timer.running { background-color: #F59E0B; }
+        .subtasks-container { background: rgba(0,0,0,0.02); border-top: 1px solid var(--border); padding: 0.5rem 1rem 0.5rem 2.5rem; }
+        body.dark-mode .subtasks-container { background: rgba(255,255,255,0.02); }
+        .subtask-item { display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; font-size: 0.9rem; border-bottom: 1px dashed var(--border); }
+        .subtask-item:last-child { border-bottom: none; }
+        .subtask-info { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
+        .subtask-completed .editable-text { text-decoration: line-through; opacity: 0.6; }
+        .add-subtask-btn { background: none; border: none; color: var(--primary); font-size: 0.85rem; cursor: pointer; padding: 0.3rem 0; font-weight: bold; margin-top: 0.2rem; }
+        .add-subtask-btn:hover { text-decoration: underline; }
+        .sync-section { margin-top: 3rem; padding-top: 2rem; border-top: 2px dashed var(--border); text-align: center; }
+        
+        .no-scroll { overflow: hidden; }
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: var(--card-bg); padding: 1.5rem; border-radius: 12px;
+            width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; gap: 1rem;
+            animation: modalFadeIn 0.2s ease-out;
+            color: var(--text);
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-title { margin: 0; font-size: 1.25rem; font-weight: bold; }
+        .modal-message { font-size: 0.95rem; opacity: 0.9; margin: 0; line-height: 1.4; word-wrap: break-word;}
+        #modal-dynamic-input { width: 100%; margin-top: 0.5rem; font-family: inherit; }
+        textarea#modal-dynamic-input { font-family: monospace; font-size: 0.85rem; resize: vertical; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>planificator</h1>
+        <button id="theme-toggle" onclick="toggleTheme()">🌙</button>
+    </header>
+
+    <main id="view-home">
+        <div class="card">
+            <h3 style="margin-top: 0; margin-bottom: 0.2rem;">Bază de Task-uri (Backlog)</h3>
+            <p style="font-size: 0.85rem; opacity: 0.8; margin-top: 0; margin-bottom: 1rem;">Separă-le prin virgulă.</p>
+            <textarea id="bulk-tasks" rows="3" placeholder="Ex: Cumpărături piață, Trimis raport..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); addBulkTasks(); }"></textarea>
+            <button onclick="addBulkTasks()">Adaugă în Bază</button>
+            <div id="backlog-list-home" class="backlog-tags"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1rem;">
+            <h2 style="margin: 0;">Planurile Tale</h2>
+            <button id="btn-new-plan" onclick="createNewPlan()">+ plan nou</button>
+        </div>
+        <div id="plans-container"></div>
+
+        <div class="sync-section">
+            <h3 style="margin-top: 0;">Sincronizare Manuală</h3>
+            <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 1rem;">
+                Mută planurile pe alt dispozitiv.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 1rem;">
+                <button class="btn-ghost" onclick="exportData()">⬆️ Exportă</button>
+                <button class="btn-ghost" onclick="importData()">⬇️ Importă</button>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-plan">
+        <div class="header-plan">
+            <button onclick="goHome()">← Înapoi</button>
+            <h2 id="plan-title" class="editable-text" contenteditable="true" onblur="updatePlanName(this)">Nume Plan</h2>
+        </div>
+
+        <div class="card time-settings">
+            <label><strong>Începere:</strong></label>
+            <span id="global-start-time" class="scrollable-time" title="Click sau Scroll pentru a edita" onclick="editGlobalTime()">09:00</span>
+            <button class="btn-small" onclick="setNow()">Acum</button>
+            <span id="finish-time-display" style="margin-left: auto; font-weight: bold;"></span>
+        </div>
+
+        <div class="card" id="plan-backlog-container">
+            <h4 style="margin-top: 0; margin-bottom: 0.5rem;">Preia din Backlog:</h4>
+            <div id="backlog-list-plan" class="backlog-tags"></div>
+        </div>
+
+        <div class="add-task-form">
+            <input type="text" id="task-name" placeholder="Task nou..." onkeydown="if(event.key === 'Enter') addTask()">
+            <input type="number" id="task-duration" placeholder="Min" value="30" onkeydown="if(event.key === 'Enter') addTask()">
+            <button onclick="addTask()">Adaugă</button>
+        </div>
+
+        <ul id="tasks-list"></ul>
+    </main>
+
+    <!-- Custom Modal Container -->
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-box">
+            <h3 class="modal-title" id="modal-title">Titlu</h3>
+            <p class="modal-message" id="modal-message">Mesaj</p>
+            <div id="modal-input-container" style="width: 100%; box-sizing: border-box; display: none;"></div>
+            <div class="modal-actions">
+                <button class="btn-ghost" id="modal-cancel">Anulează</button>
+                <button id="modal-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CUSTOM DIALOG ENGINE ---
+        const Modal = {
+            show: function({ title, message, type = 'alert', value = '', placeholder = '', onConfirm }) {
+                const overlay = document.getElementById('custom-modal');
+                const titleEl = document.getElementById('modal-title');
+                const msgEl = document.getElementById('modal-message');
+                const inputContainer = document.getElementById('modal-input-container');
+                const cancelBtn = document.getElementById('modal-cancel');
+                const confirmBtn = document.getElementById('modal-confirm');
+
+                titleEl.innerText = title || 'Atenție';
+                msgEl.innerHTML = message;
+                
+                inputContainer.style.display = (type === 'prompt' || type === 'textarea') ? 'block' : 'none';
+                if (type === 'prompt') {
+                    inputContainer.innerHTML = `<input type="text" id="modal-dynamic-input" class="modal-input" placeholder="${placeholder}" value="${value}">`;
+                } else if (type === 'textarea') {
+                    inputContainer.innerHTML = `<textarea id="modal-dynamic-input" class="modal-input" rows="6" placeholder="${placeholder}">${value}</textarea>`;
+                }
+
+                cancelBtn.style.display = type === 'alert' ? 'none' : 'inline-block';
+                confirmBtn.innerText = 'OK';
+
+                confirmBtn.onclick = () => {
+                    const val = (type === 'prompt' || type === 'textarea') ? document.getElementById('modal-dynamic-input').value : true;
+                    this.hide();
+                    if (onConfirm) onConfirm(val);
+                };
+
+                cancelBtn.onclick = () => {
+                    this.hide();
+                    if (onConfirm && type !== 'alert') onConfirm(null);
+                };
+
+                overlay.style.display = 'flex';
+                if (type === 'prompt' || type === 'textarea') {
+                    setTimeout(() => {
+                        const input = document.getElementById('modal-dynamic-input');
+                        input.focus();
+                        if (type === 'textarea' && value) input.select();
+                        
+                        // Permite confirmarea cu Enter pentru prompt-uri
+                        if (type === 'prompt') {
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    confirmBtn.click();
+                                }
+                            });
+                        }
+                    }, 50);
+                }
+            },
+            hide: function() {
+                document.getElementById('custom-modal').style.display = 'none';
+            }
+        };
+
+        const CustomDialog = {
+            alert: (msg, title = "Atenție") => new Promise(resolve => {
+                Modal.show({ title, message: msg, type: 'alert', onConfirm: () => resolve(true) });
+            }),
+            confirm: (msg, title = "Confirmare") => new Promise(resolve => {
+                Modal.show({ title, message: msg, type: 'confirm', onConfirm: (res) => resolve(res !== null) });
+            }),
+            prompt: (msg, defaultValue = '', placeholder = '', title = "Introducere Date") => new Promise(resolve => {
+                Modal.show({ title, message: msg, type: 'prompt', value: defaultValue, placeholder, onConfirm: resolve });
+            }),
+            textarea: (msg, defaultValue = '', placeholder = '', title = "Transfer Date") => new Promise(resolve => {
+                Modal.show({ title, message: msg, type: 'textarea', value: defaultValue, placeholder, onConfirm: resolve });
+            })
+        };
+
+        // --- SERVICE WORKER & THEME ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('Eroare la Service Worker:', err);
+                });
+            });
+        }
+
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        if (isDarkMode) document.body.classList.add('dark-mode');
+        updateThemeIcon();
+
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); isDarkMode = document.body.classList.contains('dark-mode'); localStorage.setItem('darkMode', isDarkMode); updateThemeIcon(); }
+        function updateThemeIcon() { document.getElementById('theme-toggle').innerText = isDarkMode ? '☀️' : '🌙'; }
+
+        // --- STATE ---
+        let plans = JSON.parse(localStorage.getItem('plans')) || [];
+        let backlog = JSON.parse(localStorage.getItem('backlog')) || [];
+        let currentPlanId = null;
+        let activeTimer = { taskId: null, intervalId: null, endTime: 0 };
+
+        // --- NOTIFICARI & AUDIO ---
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = "sine"; osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.5);
+            } catch(e) { console.log("Audio not supported"); }
+        }
+
+        async function triggerNotification(taskName) {
+            playBeep();
+            
+            if (Notification.permission === "granted") {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification("⏳ Timpul a expirat!", {
+                            body: `Ai terminat timpul pentru: "${taskName}". E timpul să treci mai departe!`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/833/833602.png",
+                            requireInteraction: true,
+                            vibrate: [200, 100, 200]
+                        });
+                    });
+                } else {
+                    new Notification("⏳ Timpul a expirat!", {
+                        body: `Ai terminat timpul pentru: "${taskName}".`,
+                        requireInteraction: true 
+                    });
+                }
+            } else {
+                await CustomDialog.alert(`⏳ Ai terminat timpul alocat pentru: <strong>${taskName}</strong>!`, "Timpul a expirat");
+            }
+        }
+
+        function addMinutesToTime(timeString, minsToAdd) { 
+            if (!timeString) return '00:00'; 
+            const [hours, minutes] = timeString.split(':').map(Number); 
+            const date = new Date(); 
+            date.setHours(hours, minutes + Number(minsToAdd)); 
+            return date.toTimeString().slice(0, 5); 
+        }
+        
+        function getMinutesDiff(time1, time2) {
+            const [h1, m1] = time1.split(':').map(Number);
+            const [h2, m2] = time2.split(':').map(Number);
+            return (h2 * 60 + m2) - (h1 * 60 + m1);
+        }
+
+        function formatTime(seconds) { if (seconds < 0) seconds = 0; const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
+
+        // --- SINCRONIZARE ---
+        async function exportData() { 
+            const dataString = JSON.stringify({ plans: plans, backlog: backlog }); 
+            await CustomDialog.textarea("Datele tale sunt selectate mai jos. Copiază-le (Ctrl+C / Copy) și lipește-le pe noul dispozitiv:", dataString, "", "Exportă Date"); 
+        }
+        
+        async function importData() { 
+            const inputData = await CustomDialog.textarea("Lipește aici codul generat la Export:", "", "Lipește JSON-ul aici...", "Importă Date"); 
+            if (!inputData || inputData.trim() === '') return; 
+            try { 
+                const parsedData = JSON.parse(inputData); 
+                if (parsedData.plans !== undefined && parsedData.backlog !== undefined) { 
+                    const confirmed = await CustomDialog.confirm("ATENȚIE! Planurile curente vor fi înlocuite complet de noile date. Ești sigur că vrei să continui?", "Confirmare Import");
+                    if (confirmed) { 
+                        plans = parsedData.plans; backlog = parsedData.backlog; 
+                        saveData(); saveBacklog(); 
+                        renderPlans(); renderBacklogHome(); 
+                        await CustomDialog.alert("Datele au fost importate și salvate cu succes!", "Import Finalizat"); 
+                    } 
+                } else await CustomDialog.alert("Codul introdus nu conține structura corectă a datelor.", "Eroare Validare"); 
+            } catch (e) { await CustomDialog.alert("Eroare la citirea codului. Asigură-te că l-ai copiat complet și corect.", "Eroare Parsare"); } 
+        }
+
+        // --- BACKLOG ---
+        function addBulkTasks() { const input = document.getElementById('bulk-tasks').value; if (!input.trim()) return; const newTasks = input.split(',').map(t => t.trim()).filter(t => t !== ''); backlog = [...backlog, ...newTasks]; document.getElementById('bulk-tasks').value = ''; saveBacklog(); renderBacklogHome(); }
+        async function deleteFromBacklog(index, event) { if(event) event.stopPropagation(); backlog.splice(index, 1); saveBacklog(); renderBacklogHome(); if (currentPlanId) renderBacklogPlan(); }
+        function renderBacklogHome() { const container = document.getElementById('backlog-list-home'); container.innerHTML = ''; backlog.forEach((task, index) => { const tag = document.createElement('div'); tag.className = 'backlog-tag'; tag.innerHTML = `<span>${task}</span> <span class="remove-tag" onclick="deleteFromBacklog(${index}, event)">×</span>`; container.appendChild(tag); }); }
+        function renderBacklogPlan() { 
+            const container = document.getElementById('backlog-list-plan'); const mainContainer = document.getElementById('plan-backlog-container'); if (backlog.length === 0) { mainContainer.style.display = 'none'; return; } mainContainer.style.display = 'block'; container.innerHTML = ''; 
+            backlog.forEach((task, index) => { 
+                const tag = document.createElement('div'); tag.className = 'backlog-tag'; tag.innerHTML = `+ ${task}`; 
+                tag.onclick = async () => { 
+                    const duration = await CustomDialog.prompt(`Câte minute aloci pentru task-ul "${task}"?`, "30", "Ex: 15, 30, 45...", "Durată Task"); 
+                    if (duration !== null && duration.trim() !== '') { addSpecificTask(task, duration); deleteFromBacklog(index); } 
+                }; 
+                container.appendChild(tag); 
+            }); 
+        }
+        function saveBacklog() { localStorage.setItem('backlog', JSON.stringify(backlog)); }
+
+        // --- PLANURI ---
+        function renderPlans() { const container = document.getElementById('plans-container'); container.innerHTML = ''; plans.forEach(plan => { const div = document.createElement('div'); div.className = 'plan-card'; const totalDuration = plan.tasks.reduce((sum, task) => sum + Number(task.duration), 0); div.innerHTML = `<div><strong>${plan.name}</strong> <span style="font-size: 0.8rem; opacity: 0.7;">(${plan.tasks.length} taskuri | ${totalDuration} min)</span></div><button class="btn-danger btn-small" onclick="deletePlan(${plan.id}, event)">Șterge</button>`; div.onclick = (e) => { if(e.target.tagName !== 'BUTTON') openPlan(plan.id); }; container.appendChild(div); }); saveData(); }
+        
+        async function createNewPlan() { 
+            const planName = await CustomDialog.prompt("Introdu un nume pentru noul tău plan:", "", "Ex: Plan de Luni", "Plan Nou"); 
+            if (planName && planName.trim() !== '') { 
+                plans.push({ id: Date.now(), name: planName, startTime: '09:00', tasks: [] }); 
+                renderPlans(); 
+            } 
+        }
+        
+        async function deletePlan(id, event) { 
+            event.stopPropagation(); 
+            const confirm = await CustomDialog.confirm("Ești sigur că vrei să ștergi definitiv acest plan?", "Ștergere Plan");
+            if(confirm) { plans = plans.filter(p => p.id !== id); renderPlans(); } 
+        }
+        
+        function openPlan(id) { 
+            currentPlanId = id; 
+            const plan = plans.find(p => p.id === id); 
+            document.getElementById('plan-title').innerText = plan.name; 
+            
+            const globalTimeEl = document.getElementById('global-start-time');
+            globalTimeEl.innerText = plan.startTime || '09:00';
+            setupGlobalTimeScroll(globalTimeEl);
+
+            document.getElementById('view-home').style.display = 'none'; 
+            document.getElementById('view-plan').style.display = 'block'; 
+            renderBacklogPlan(); 
+            renderTasks(); 
+        }
+        
+        function goHome() { currentPlanId = null; stopTimer(); document.getElementById('view-home').style.display = 'block'; document.getElementById('view-plan').style.display = 'none'; renderPlans(); renderBacklogHome(); }
+        
+        function setNow() { 
+            const now = new Date(); 
+            const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`; 
+            const planIndex = plans.findIndex(p => p.id === currentPlanId);
+            plans[planIndex].startTime = timeString; document.getElementById('global-start-time').innerText = timeString;
+            saveData(); renderTasks(); 
+        }
+
+        async function addTask() { 
+            const nameInput = document.getElementById('task-name'); 
+            const durationInput = document.getElementById('task-duration'); 
+            if (nameInput.value.trim() === '' || durationInput.value.trim() === '') { 
+                await CustomDialog.alert("Nu uita să completezi ambele câmpuri: Numele task-ului și Durata în minute.", "Eroare Adăugare"); 
+                return; 
+            } 
+            addSpecificTask(nameInput.value, durationInput.value); 
+            nameInput.value = ''; 
+            durationInput.value = '30'; // Re-setează la 30 după adăugare
+        }
+        
+        function addSpecificTask(name, duration) { const planIndex = plans.findIndex(p => p.id === currentPlanId); plans[planIndex].tasks.push({ id: Date.now(), name: name, duration: Number(duration), done: false, subtasks: [] }); saveData(); renderTasks(); }
+        function toggleTask(taskId) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); task.done = !task.done; saveData(); renderTasks(); }
+        
+        async function deleteTask(taskId) { 
+            const confirm = await CustomDialog.confirm("Ești sigur că vrei să ștergi acest task din listă?", "Ștergere Task");
+            if(!confirm) return; 
+            const planIndex = plans.findIndex(p => p.id === currentPlanId); plans[planIndex].tasks = plans[planIndex].tasks.filter(t => t.id !== taskId); 
+            if(activeTimer.taskId === taskId) stopTimer(); saveData(); renderTasks(); 
+        }
+        
+        // --- EDITARE INLINE ---
+        function updatePlanName(element) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const newName = element.innerText.trim(); if (newName) { plans[planIndex].name = newName; saveData(); } else { element.innerText = plans[planIndex].name; } }
+        function updateTaskName(element, taskId) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); const newName = element.innerText.trim(); if (newName) { task.name = newName; saveData(); } else { element.innerText = task.name; } }
+        function updateSubtaskName(element, taskId, subtaskId) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); const sub = task.subtasks.find(s => s.id === subtaskId); const newName = element.innerText.trim(); if (newName) { sub.name = newName; saveData(); } else { element.innerText = sub.name; } }
+
+        // --- EDITARE ORE & DURATA (SCROLL + CLICK) ---
+        async function editGlobalTime() {
+            const planIndex = plans.findIndex(p => p.id === currentPlanId);
+            const currentStart = plans[planIndex].startTime || '09:00';
+            const newVal = await CustomDialog.prompt("Introdu noua oră de începere (HH:MM):", currentStart, "Ex: 09:30", "Setează Ora");
+            if (newVal && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(newVal.trim())) {
+                plans[planIndex].startTime = newVal.trim();
+                document.getElementById('global-start-time').innerText = plans[planIndex].startTime;
+                saveData(); renderTasks();
+            } else if (newVal !== null) {
+                await CustomDialog.alert("Formatul nu este valid. Te rog folosește HH:MM (ex: 09:30 sau 14:00).", "Eroare Format");
+            }
+        }
+
+        async function editTaskDurationClick(taskId) {
+            const planIndex = plans.findIndex(p => p.id === currentPlanId);
+            const task = plans[planIndex].tasks.find(t => t.id === taskId);
+            const newDuration = await CustomDialog.prompt("Introdu noua durată (în minute):", task.duration, "Ex: 30", "Editează Durata");
+            if (newDuration !== null && !isNaN(newDuration) && newDuration.trim() !== '') {
+                task.duration = Math.max(1, Number(newDuration));
+                saveData(); renderTasks();
+            }
+        }
+
+        async function editTaskStartTimeClick(taskId, currentTaskStartTime) {
+            const newVal = await CustomDialog.prompt("Modificarea orei acestui task va decala întregul plan.\n\nIntrodu noua oră (HH:MM):", currentTaskStartTime, "Ex: 14:00", "Setează Ora Task");
+            if (newVal && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(newVal.trim())) {
+                const diffMin = getMinutesDiff(currentTaskStartTime, newVal.trim());
+                const planIndex = plans.findIndex(p => p.id === currentPlanId);
+                const plan = plans[planIndex];
+                plan.startTime = addMinutesToTime(plan.startTime || '09:00', diffMin);
+                document.getElementById('global-start-time').innerText = plan.startTime;
+                saveData(); renderTasks();
+            } else if (newVal !== null) {
+                await CustomDialog.alert("Formatul nu este valid. Te rog folosește HH:MM (ex: 09:30 sau 14:00).", "Eroare Format");
+            }
+        }
+
+        function setupGlobalTimeScroll(element) {
+            element.onwheel = (e) => {
+                e.preventDefault();
+                const planIndex = plans.findIndex(p => p.id === currentPlanId);
+                const currentStart = plans[planIndex].startTime || '09:00';
+                const direction = e.deltaY < 0 ? 1 : -1; 
+                const shiftMinutes = e.shiftKey ? 10 : 1; 
+                const noileMinute = direction * shiftMinutes;
+                const nouaOra = addMinutesToTime(currentStart, noileMinute);
+                plans[planIndex].startTime = nouaOra; element.innerText = nouaOra;
+                saveData(); renderTasks();
+            };
+        }
+
+        function setupDurationScroll(element, taskId) {
+            element.onwheel = (e) => {
+                e.preventDefault();
+                const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId);
+                const direction = e.deltaY < 0 ? 1 : -1; const shiftMinutes = e.shiftKey ? 10 : 1;
+                let newDuration = Number(task.duration) + (direction * shiftMinutes); if (newDuration < 1) newDuration = 1; 
+                task.duration = newDuration; element.innerText = `${newDuration} min`; saveData();
+                if(activeTimer.taskId !== taskId) { const timerBtn = document.getElementById(`timer-btn-${taskId}`); if(timerBtn) timerBtn.innerText = `▶️ ${newDuration}m`; }
+                renderTasks();
+            };
+        }
+
+        function setupTaskStartTimeScroll(element, taskId, currentTaskStartTime) {
+            element.onwheel = (e) => {
+                e.preventDefault();
+                const planIndex = plans.findIndex(p => p.id === currentPlanId); const plan = plans[planIndex];
+                const direction = e.deltaY < 0 ? 1 : -1; const shiftMinutes = e.shiftKey ? 10 : 1;
+                const nouaOraCurentaSetata = addMinutesToTime(currentTaskStartTime, direction * shiftMinutes);
+                const diffMin = getMinutesDiff(currentTaskStartTime, nouaOraCurentaSetata);
+                plan.startTime = addMinutesToTime(plan.startTime || '09:00', diffMin);
+                document.getElementById('global-start-time').innerText = plan.startTime;
+                saveData(); renderTasks();
+            };
+        }
+
+        // SCROLL IZOLAT PENTRU CĂSUȚA DE MINUTE LA "TASK NOU"
+        const taskDurationInput = document.getElementById('task-duration');
+        if(taskDurationInput) {
+            taskDurationInput.addEventListener('wheel', function(e) {
+                e.preventDefault(); // Previne mișcarea paginii
+                const direction = e.deltaY < 0 ? 1 : -1;
+                const shiftMinutes = e.shiftKey ? 10 : 1;
+                let val = parseInt(this.value) || 0;
+                let newVal = val + (direction * shiftMinutes);
+                if (newVal < 1) newVal = 1;
+                this.value = newVal;
+            }, { passive: false });
+        }
+
+        // --- SUB-TASK-URI ---
+        async function addSubtask(taskId) { 
+            const name = await CustomDialog.prompt("Cum se numește noul pas / sub-task?", "", "Scrie aici...", "Adăugare Sub-task"); 
+            if (!name || name.trim() === '') return; 
+            const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); 
+            if(!task.subtasks) task.subtasks = []; task.subtasks.push({ id: Date.now(), name: name, done: false }); saveData(); renderTasks(); 
+        }
+        function toggleSubtask(taskId, subtaskId) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); const sub = task.subtasks.find(s => s.id === subtaskId); sub.done = !sub.done; saveData(); renderTasks(); }
+        function deleteSubtask(taskId, subtaskId) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const task = plans[planIndex].tasks.find(t => t.id === taskId); task.subtasks = task.subtasks.filter(s => s.id !== subtaskId); saveData(); renderTasks(); }
+
+        // --- TIMER ---
+        async function toggleTimer(taskId, durationMins, taskName) {
+            if (activeTimer.taskId === taskId) { stopTimer(); renderTasks(); return; }
+
+            if ("Notification" in window) {
+                if (Notification.permission === "default") {
+                    Notification.requestPermission().then(async permission => {
+                        if (permission === "granted") { startActualTimer(taskId, durationMins, taskName); } 
+                        else { 
+                            await CustomDialog.alert("Ai refuzat notificările native. Timer-ul va porni, dar nu vei primi o alertă direct pe desktop/telefon.", "Notificări Oprite"); 
+                            startActualTimer(taskId, durationMins, taskName); 
+                        }
+                    });
+                    return;
+                } else if (Notification.permission === "denied") {
+                    startActualTimer(taskId, durationMins, taskName);
+                    return;
+                }
+            }
+            startActualTimer(taskId, durationMins, taskName);
+        }
+
+        function startActualTimer(taskId, durationMins, taskName) {
+            stopTimer(); activeTimer.taskId = taskId; activeTimer.endTime = Date.now() + (durationMins * 60 * 1000);
+            activeTimer.intervalId = setInterval(() => {
+                const msLeft = activeTimer.endTime - Date.now();
+                const secondsLeft = Math.round(msLeft / 1000);
+                const btn = document.getElementById(`timer-btn-${taskId}`);
+                if (secondsLeft <= 0) { stopTimer(); triggerNotification(taskName); renderTasks(); } 
+                else { if (btn) btn.innerHTML = `⏳ ${formatTime(secondsLeft)}`; }
+            }, 1000);
+            renderTasks();
+        }
+
+        function stopTimer() { if (activeTimer.intervalId) clearInterval(activeTimer.intervalId); activeTimer = { taskId: null, intervalId: null, endTime: 0 }; }
+
+        document.addEventListener('keydown', function(e) {
+            // Pentru submit pe Enter când editezi denumirile "inline" pe pagină
+            if (e.target.classList.contains('editable-text') && e.key === 'Enter') {
+                e.preventDefault(); e.target.blur(); 
+            }
+        });
+
+        // --- RENDERIZARE ---
+        function renderTasks() {
+            const list = document.getElementById('tasks-list'); const plan = plans.find(p => p.id === currentPlanId); list.innerHTML = '';
+            let currentTimeTracker = plan.startTime || '09:00';
+            
+            plan.tasks.forEach(task => {
+                if (!task.subtasks) task.subtasks = [];
+                const taskEndTime = addMinutesToTime(currentTimeTracker, task.duration); 
+                const startString = currentTimeTracker;
+                
+                const li = document.createElement('li'); li.className = `task-item`; li.setAttribute('data-id', task.id);
+                const isRunning = activeTimer.taskId === task.id; let timerBtnClass = 'btn-small btn-timer'; let timerText = `▶️ ${task.duration}m`;
+                if (isRunning) { timerBtnClass += ' running'; const secs = Math.round((activeTimer.endTime - Date.now()) / 1000); timerText = `⏳ ${formatTime(secs)}`; }
+                
+                let subtasksHTML = '';
+                if (task.subtasks.length > 0) {
+                    subtasksHTML += `<div class="subtasks-container" id="subtask-list-${task.id}">`;
+                    task.subtasks.forEach(sub => {
+                        subtasksHTML += `
+                            <div class="subtask-item ${sub.done ? 'subtask-completed' : ''}" data-sub-id="${sub.id}">
+                                <div class="subtask-info">
+                                    <span class="drag-handle" title="Trage pentru a muta">⋮⋮</span>
+                                    <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSubtask(${task.id}, ${sub.id})">
+                                    <span class="editable-text" contenteditable="true" onblur="updateSubtaskName(this, ${task.id}, ${sub.id})">${sub.name}</span>
+                                </div>
+                                <div style="display:flex; align-items:center;">
+                                    <span class="remove-tag" style="font-size:1.1rem; cursor:pointer;" title="Șterge" onclick="deleteSubtask(${task.id}, ${sub.id})">×</span>
+                                </div>
+                            </div>`;
+                    });
+                    subtasksHTML += '</div>';
+                }
+                
+                li.innerHTML = `
+                    <div class="task-main-row ${task.done ? 'completed' : ''}">
+                        <div class="task-info">
+                            <span class="drag-handle" title="Trage pentru a muta">⋮⋮</span>
+                            <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                            <span class="editable-text" contenteditable="true" onblur="updateTaskName(this, ${task.id})"><strong>${task.name}</strong></span>
+                            
+                            <span class="badge">
+                                <span class="scrollable-value" id="duration-scroll-${task.id}" title="Click sau Scroll pentru durată" onclick="editTaskDurationClick(${task.id})">${task.duration} min</span>
+                            </span>
+                            
+                            <span class="badge time-badge">
+                                <span class="scrollable-time" id="start-scroll-${task.id}" title="Click sau Scroll pentru oră" onclick="editTaskStartTimeClick(${task.id}, '${startString}')">🕒 ${startString}</span> - ${taskEndTime}
+                            </span>
+                        </div>
+                        
+                        <div style="display:flex; gap: 0.5rem; align-items:center;">
+                            <button id="timer-btn-${task.id}" class="${timerBtnClass}" onclick="toggleTimer(${task.id}, ${task.duration}, '${task.name}')">${timerText}</button>
+                            <button class="btn-ghost btn-small" title="Șterge" onclick="deleteTask(${task.id})">🗑️</button>
+                        </div>
+                    </div>
+                    ${subtasksHTML}
+                    <div style="padding: 0 1rem 0.5rem 1rem;">
+                        <button class="add-subtask-btn" onclick="addSubtask(${task.id})">+ Sub-task</button>
+                    </div>`;
+                list.appendChild(li); 
+                
+                const durEl = document.getElementById(`duration-scroll-${task.id}`);
+                if(durEl) setupDurationScroll(durEl, task.id);
+                
+                const startEl = document.getElementById(`start-scroll-${task.id}`);
+                if(startEl) setupTaskStartTimeScroll(startEl, task.id, startString);
+
+                currentTimeTracker = taskEndTime;
+            });
+            const finishDisplay = document.getElementById('finish-time-display');
+            if (plan.tasks.length > 0) { finishDisplay.innerText = `Finalizare: ${currentTimeTracker}`; } else { finishDisplay.innerText = ''; }
+            
+            plan.tasks.forEach(task => {
+                if (task.subtasks && task.subtasks.length > 1) {
+                    const subList = document.getElementById(`subtask-list-${task.id}`);
+                    if (subList) { new Sortable(subList, { animation: 150, handle: '.drag-handle', onEnd: function (evt) { const planIndex = plans.findIndex(p => p.id === currentPlanId); const targetTask = plans[planIndex].tasks.find(t => t.id === task.id); const itemMoved = targetTask.subtasks.splice(evt.oldIndex, 1)[0]; targetTask.subtasks.splice(evt.newIndex, 0, itemMoved); saveData(); } }); }
+                }
+            });
+        }
+        function saveData() { localStorage.setItem('plans', JSON.stringify(plans)); }
+        
+        const tasksListElement = document.getElementById('tasks-list');
+        new Sortable(tasksListElement, { 
+            animation: 150, 
+            handle: '.drag-handle', // Acum poți trage doar folosind mânerul
+            onEnd: function (evt) { 
+                const planIndex = plans.findIndex(p => p.id === currentPlanId); 
+                const taskMoved = plans[planIndex].tasks.splice(evt.oldIndex, 1)[0]; 
+                plans[planIndex].tasks.splice(evt.newIndex, 0, taskMoved); 
+                saveData(); 
+                renderTasks(); 
+            } 
+        });
+
+        renderBacklogHome(); renderPlans();
+    </script>
+</body>
+</html>
