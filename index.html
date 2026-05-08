@@ -25,7 +25,7 @@
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; transition: background-color 0.3s, color 0.3s; }
-        header { width: 100%; background-color: var(--primary); color: white; padding: 1rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; position: relative; }
+        header { width: 100%; background-color: var(--primary); color: white; padding: 1rem 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; }
         h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
         #theme-toggle { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; }
         main { width: 90%; max-width: 650px; margin-top: 2rem; padding-bottom: 3rem; }
@@ -298,7 +298,14 @@
             });
         }
 
-        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        let savedTheme = localStorage.getItem('darkMode');
+        let isDarkMode;
+
+        if (savedTheme === null){
+            isDarkMode = true;
+        } else {
+            isDarkMode = (savedTheme === 'true');
+        }
         if (isDarkMode) document.body.classList.add('dark-mode');
         updateThemeIcon();
 
