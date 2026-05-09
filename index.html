@@ -303,7 +303,7 @@
                     setTimeout(() => {
                         const input = document.getElementById('modal-dynamic-input');
                         input.focus();
-                        if (type === 'textarea' && value) input.select();
+                        if ((type === 'textarea' || type === 'prompt') && value) input.select();
                         
                         // Permite confirmarea cu Enter pentru prompt-uri
                         if (type === 'prompt') {
@@ -414,6 +414,17 @@
             return (h2 * 60 + m2) - (h1 * 60 + m1);
         }
 
+        // Funcție nouă pentru a scrie data în limba română
+        function getCurrentFormattedDate() {
+            const luni = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+            const azi = new Date();
+            const ziua = azi.getDate();
+            const luna = luni[azi.getMonth()];
+            const anul = azi.getFullYear();
+            
+            return `${ziua} ${luna} ${anul}`;
+        }
+        
         function formatTime(seconds) { if (seconds < 0) seconds = 0; const m = Math.floor(seconds / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${m}:${s}`; }
 
         // --- SINCRONIZARE ---
@@ -489,9 +500,12 @@
         }
         
         async function createNewPlan() { 
-            const planName = await CustomDialog.prompt("Introdu un nume pentru noul tău plan:", "", "Ex: Plan de Luni", "Plan Nou"); 
+            const dataDeAzi = getCurrentFormattedDate(); // Chemăm funcția de la Pasul 1
+            
+            // Trimitem 'dataDeAzi' ca valoare implicită (default)
+            const planName = await CustomDialog.prompt("Introdu un nume pentru noul tău plan:", dataDeAzi, "Ex: Plan de Luni", "Plan Nou"); 
+            
             if (planName && planName.trim() !== '') { 
-                // UNSHIFT îl pune direct pe prima poziție în listă!
                 plans.unshift({ id: Date.now(), name: planName, startTime: '09:00', tasks: [] }); 
                 renderPlans(); 
             } 
