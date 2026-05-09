@@ -8,12 +8,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
-            --primary: #4F46E5;
-            --bg: #F3F4F6;
+            --primary: #6366F1; /* Un mov/indigo puțin mai vibrant și modern */
+            --primary-hover: #4F46E5;
+            --bg: #F8FAFC; /* Un gri-albastru foarte foarte deschis, curat */
             --card-bg: #FFFFFF;
-            --text: #1F2937;
-            --border: #D1D5DB;
-            --badge-bg: #E5E7EB;
+            --text: #1E293B; /* Un gri închis în loc de negru pur, obosește ochii mai puțin */
+            --text-light: #64748B;
+            --border: #E2E8F0;
+            --badge-bg: #F1F5F9;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.02);
+            --shadow-md: 0 10px 25px rgba(0,0,0,0.05); /* Umbră mare, dar foarte transparentă */
         }
 
         body.dark-mode {
@@ -30,8 +34,17 @@
         h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 1px; }
         #theme-toggle { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.5rem; cursor: pointer; color: white; }
         main { width: 90%; max-width: 650px; margin-top: 2rem; padding-bottom: 3rem; }
-        button { background-color: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
+        button { 
+            background-color: var(--primary); color: white; border: none; 
+            padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; 
+            font-weight: 600; font-size: 0.95rem;
+            transition: all 0.2s ease; 
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2); /* Umbră mov pentru butonul principal */
+        }
+        button:hover { 
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
         .btn-danger { background-color: #EF4444; }
         .btn-small { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .btn-ghost { background-color: transparent; color: var(--text); border: 1px solid var(--border); }
@@ -76,10 +89,30 @@
         .drag-handle:hover { background-color: var(--border); color: var(--text); }
         .drag-handle:active { cursor: grabbing; }
 
-        .card { background: var(--card-bg); padding: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        .card { 
+            background: var(--card-bg); 
+            padding: 1.5rem 2rem; /* Am mărit padding-ul pentru acel look "aerisit" */
+            border-radius: 16px; /* Colțuri mult mai rotunde (stil Apple/iOS) */
+            box-shadow: var(--shadow-md); 
+            margin-bottom: 1.5rem; 
+            border: 1px solid rgba(255,255,255,0.5); /* Un mic truc de design pentru "glass" effect */
+        }
         #view-home { display: block; }
-        .plan-card { background: var(--card-bg); padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.1s, background-color 0.3s; }
-        .plan-card:hover { transform: translateY(-2px); }
+        .plan-card { 
+            background: var(--card-bg); 
+            padding: 1.25rem 1.5rem; 
+            margin-bottom: 1rem; 
+            border-radius: 12px; 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; 
+            cursor: pointer; transition: all 0.2s ease; 
+        }
+        .plan-card:hover { 
+            transform: translateY(-3px); 
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary);
+        }
         textarea { width: 100%; margin-bottom: 0.5rem; resize: vertical; }
         .backlog-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
         .backlog-tag { background: var(--badge-bg); padding: 0.4rem 0.8rem; border-radius: 16px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--border); }
@@ -96,8 +129,22 @@
         #task-duration { flex: 1; min-width: 60px; max-width: 80px;}
         
         ul { list-style: none; padding: 0; margin: 0; }
-        li.task-item { background: var(--card-bg); margin-bottom: 0.8rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background-color 0.3s; display: flex; flex-direction: column; overflow: hidden; }
-        .task-main-row { padding: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+        li.task-item { 
+            background: var(--card-bg); 
+            margin-bottom: 1rem; /* Mai mult spațiu între task-uri */
+            border-radius: 12px; 
+            box-shadow: var(--shadow-sm); 
+            border: 1px solid var(--border);
+            transition: all 0.3s ease; 
+            display: flex; flex-direction: column; overflow: hidden; 
+        }
+        li.task-item:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .task-main-row { 
+            padding: 1.2rem 1.5rem; /* Rânduri mai înalte și aerisite */
+            display: flex; justify-content: space-between; align-items: center; gap: 1rem; 
+        }
         
         .task-info { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; flex: 1; }
         .badge { background: var(--badge-bg); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center;}
@@ -410,12 +457,42 @@
         function saveBacklog() { localStorage.setItem('backlog', JSON.stringify(backlog)); }
 
         // --- PLANURI ---
-        function renderPlans() { const container = document.getElementById('plans-container'); container.innerHTML = ''; plans.forEach(plan => { const div = document.createElement('div'); div.className = 'plan-card'; const totalDuration = plan.tasks.reduce((sum, task) => sum + Number(task.duration), 0); div.innerHTML = `<div><strong>${plan.name}</strong> <span style="font-size: 0.8rem; opacity: 0.7;">(${plan.tasks.length} taskuri | ${totalDuration} min)</span></div><button class="btn-danger btn-small" onclick="deletePlan(${plan.id}, event)">Șterge</button>`; div.onclick = (e) => { if(e.target.tagName !== 'BUTTON') openPlan(plan.id); }; container.appendChild(div); }); saveData(); }
+        function renderPlans() { 
+            const container = document.getElementById('plans-container'); 
+            container.innerHTML = ''; 
+            
+            plans.forEach(plan => { 
+                const div = document.createElement('div'); 
+                div.className = 'plan-card'; 
+                const totalDuration = plan.tasks.reduce((sum, task) => sum + Number(task.duration), 0); 
+                
+                // Am adăugat mânerul de drag and drop și am asigurat alinierea
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <span class="drag-handle plan-drag-handle" title="Trage pentru a muta" onclick="event.stopPropagation()">⋮⋮</span>
+                        <div>
+                            <strong>${plan.name}</strong> 
+                            <span style="font-size: 0.8rem; opacity: 0.7; margin-left: 0.5rem;">(${plan.tasks.length} taskuri | ${totalDuration} min)</span>
+                        </div>
+                    </div>
+                    <button class="btn-danger btn-small" onclick="deletePlan(${plan.id}, event)">Șterge</button>
+                `; 
+                
+                div.onclick = (e) => { 
+                    // Se deschide planul doar dacă nu ai dat click pe butonul de ștergere
+                    if(e.target.tagName !== 'BUTTON') openPlan(plan.id); 
+                }; 
+                
+                container.appendChild(div); 
+            }); 
+            saveData(); 
+        }
         
         async function createNewPlan() { 
             const planName = await CustomDialog.prompt("Introdu un nume pentru noul tău plan:", "", "Ex: Plan de Luni", "Plan Nou"); 
             if (planName && planName.trim() !== '') { 
-                plans.push({ id: Date.now(), name: planName, startTime: '09:00', tasks: [] }); 
+                // UNSHIFT îl pune direct pe prima poziție în listă!
+                plans.unshift({ id: Date.now(), name: planName, startTime: '09:00', tasks: [] }); 
                 renderPlans(); 
             } 
         }
@@ -719,6 +796,20 @@
             } 
         });
 
+        // --- DRAG & DROP PENTRU PLANURI ---
+        const plansListElement = document.getElementById('plans-container');
+        new Sortable(plansListElement, { 
+            animation: 150, 
+            handle: '.plan-drag-handle', // Tragi doar folosind noul mâner creat
+            onEnd: function (evt) { 
+                // Mutăm elementul în array (baza de date) când se termină de tras
+                const planMoved = plans.splice(evt.oldIndex, 1)[0]; 
+                plans.splice(evt.newIndex, 0, planMoved); 
+                saveData(); 
+                renderPlans(); 
+            } 
+        });
+        
         renderBacklogHome(); renderPlans();
     </script>
 </body>
