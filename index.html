@@ -8,11 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
-            --primary: #6366F1; /* Un mov/indigo puțin mai vibrant și modern */
+            --primary: #6366F1; 
             --primary-hover: #4F46E5;
-            --bg: #F8FAFC; /* Un gri-albastru foarte foarte deschis, curat */
+            --bg: #F8FAFC; 
             --card-bg: #FFFFFF;
-            --text: #1E293B; /* Un gri închis în loc de negru pur, obosește ochii mai puțin */
+            --text: #1E293B; 
             --text-light: #64748B;
             --border: #E2E8F0;
             --badge-bg: #F1F5F9;
@@ -158,8 +158,23 @@
         .subtask-item:last-child { border-bottom: none; }
         .subtask-info { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
         .subtask-completed .editable-text { text-decoration: line-through; opacity: 0.6; }
-        .add-subtask-btn { background: none; border: none; color: var(--primary); font-size: 0.85rem; cursor: pointer; padding: 0.3rem 0; font-weight: bold; margin-top: 0.2rem; }
-        .add-subtask-btn:hover { text-decoration: underline; }
+        .add-subtask-btn { 
+            background: transparent; 
+            border: none; 
+            color: var(--primary); 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            padding: 0.4rem 0.8rem; /* 0.8rem îi dă acel spațiu stânga-dreapta de care are nevoie */
+            font-weight: bold; 
+            margin-top: 0.2rem; 
+            box-shadow: none; /* Îi scoatem umbra mov nedorită */
+            border-radius: 6px;
+        }
+        .add-subtask-btn:hover { 
+            background: var(--badge-bg); /* Când treci cu mouse-ul primește un fundal gri foarte fin */
+            text-decoration: none; 
+            transform: none; /* Îl oprim din a "sări" în sus ca butoanele mari */
+        }
         .sync-section { margin-top: 3rem; padding-top: 2rem; border-top: 2px dashed var(--border); text-align: center; }
         
         .no-scroll { overflow: hidden; }
